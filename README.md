@@ -1,2 +1,5 @@
 # P2Pact
-Source code for the P2Pact project developed for the Sydney EOS Hackathon 2018
+
+## An open-source micro-crowdfunding platform aimed at allowing people to raise money in order to perform charitable activities
+
+
