@@ -40,6 +40,8 @@ namespace P2Pact {
    class Contributors {
         public:
             //@abi action 
+            Contributors(){}
+
             void update(account_name _self, uint64_t _deposit) {
                 require_auth(_user);
 
@@ -102,19 +104,36 @@ namespace P2Pact {
 
             //@abi action
             void add(const account_name account, string& proposalName, string& proposalDescription,
-                        uint64_t threshold) {
+                        uint64_t threshold) {                
+                require_auth(account); //Ensure only an owned account can submit a proposal
+                proposalIndex proposals(_self, _self); //Create table and pass scope
+                proposals.emplace(account, [&](auto& proposal){
+                    proposal.account_name = account;
+                    proposal.proposalName = proposalName;
+                    proposal.proposalDescription = proposalDescription;
+                    proposal.threshold = threshold;
+                    proposal.totalPledged = 0;
+                    proposal.contributors = new Contributors();
+                });
 
             }
 
             //@abi action
             void deposit(uint64_t amount){
 
+
+
             }
 
             //@abi action
-            void addContributor(const account_name account) {
+            void addContributor(account_name account, account_name contributor, uint64_t amount) {
+                proposal currProp = getProposal(account);
+                if (checkThreshold == false) {
+                    currProp.contributors.update(contributor, amount);
+                    currProp.totalPledged += amount;
+                }
 
-                
+
 
             }
 
@@ -124,8 +143,12 @@ namespace P2Pact {
             }
 
             //@abi action
-            void getProposal(const account_name account) {
-
+            proposal getProposal(const account_name account) {
+                proposalIndex proposals(_self, _self);
+                auto iterator = proposals.find(account);
+                eosio_assert(iterator != proposals.end(), "Address for account not found");
+                auto currProp = proposals.get(account);
+                return currProp;
             }
 
         private:
