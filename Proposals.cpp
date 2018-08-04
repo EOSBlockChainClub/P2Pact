@@ -38,9 +38,51 @@ namespace P2Pact {
     */
 
    class Proposals: public contract{
-       using contract::contract;
+        using contract::contract;
 
-       public:
+        public:
+            Proposals(account_name self):contract(self) {}
+
+            //@abi action
+            void add(const account_name account, string& proposalName, string& proposalDescription,
+                        uint64_t threshold) {
+
+            }
+
+            //@abi action
+            void deposit(uint64_t amount){
+
+            }
+
+            //@abi action
+            void addContributor(const account_name account) {
+
+            }
+
+            //@abi action
+            bool checkThreshold(uint64_t deposit) {
+
+            }
+
+            //@abi action
+            void getProposal(const account_name account) {
+
+            }
+
+        private:
+
+            //@abi table proposal i64
+            struct proposal {
+                uint64_t account_name;
+                string proposalName;
+                string proposalDescription;
+                uint64_t threshold;
+
+                uint64_t primary_key() const { return username; }
+
+                EOSLIB_SERIALIZE(proposal, (account_name)(proposalName)(proposalDescription)(threshold))
+            };
+        
             
    }
 }
