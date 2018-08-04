@@ -135,6 +135,7 @@ namespace P2Pact {
                     proposal.threshold = threshold;
                     proposal.totalPledged = 0;
                     proposal.contributors = new Contributors();
+                    proposal.proofs = new
                 });
 
             }
@@ -164,12 +165,16 @@ namespace P2Pact {
             }
 
             //@abi action
-            proposal getProposal(const account_name account) {
+            proposal getProposal(account_name account) {
                 proposalIndex proposals(_self, _self);
                 auto iterator = proposals.find(account);
                 eosio_assert(iterator != proposals.end(), "Address for account not found");
                 auto currProp = proposals.get(account);
                 return currProp;
+            }
+
+            void addProofHash(checksum256 proofHash, string& proofName, account_name account) {
+                getProposal(account).proofs.add(proofHash, proofName);
             }
 
         private:
