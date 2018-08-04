@@ -73,6 +73,7 @@ namespace P2Pact {
                 uint64_t totalPledged;
                 vector<checksum256> proofHashes;
                 vector<string> proofNames;
+                vector<uint64_t> donors;
                 uint64_t primary_key() const { return account_name; }
 
                 EOSLIB_SERIALIZE(proposal, (account_name)(proposalName)(proposalDescription)(threshold))
@@ -115,6 +116,7 @@ namespace P2Pact {
                 proposal currProp = getProposal(account);
                 if (checkThreshold(currProp, amount) == false) {
                     currProp.totalPledged += amount;
+                    update(contributor, amount, currProp);
                 }
             }
 
@@ -143,7 +145,7 @@ namespace P2Pact {
             }
 
             //@abi action
-            void update(account_name _user, uint64_t _deposit) {
+            void update(account_name _user, uint64_t _deposit, proposal currProp) {
                 require_auth(_user);
 
                 contributorTable obj(_self, _self);
@@ -151,11 +153,14 @@ namespace P2Pact {
                 //Create or add total deposit depending if contributor has already donated
                 if(isNewContributor(_user)) {
                     //Insert object
+                    currProp.donors.push_back(_user);
+                    
                     obj.emplace(_self,[&](auto& address) {
                         address.prim_key = obj.available_primary_key();
                         address.user = _user;
                         address.totalContribution = _deposit;
                     });
+
                 } else {
                     //Get object by secondary key
                     auto contributions = obj.get_index<N(getbyuser)>();
