@@ -74,9 +74,10 @@ namespace P2Pact {
                 vector<checksum256> proofHashes;
                 vector<string> proofNames;
                 vector<contributor> donors;
+                bool isDone;
                 uint64_t primary_key() const { return account_name; }
 
-                EOSLIB_SERIALIZE(proposal, (account_name)(proposalName)(proposalDescription)(threshold)(totalPledged)(proofHashes)(proofNames)(donors))
+                EOSLIB_SERIALIZE(proposal, (account_name)(proposalName)(proposalDescription)(threshold)(totalPledged)(proofHashes)(proofNames)(donors)(isDone))
             };
 
             typedef multi_index<N(proposal), proposal> proposalIndex;
@@ -110,8 +111,13 @@ namespace P2Pact {
                     proposal.proofHashes = vector<checksum256>();
                     proposal.proofNames = vector<string>();
                     proposal.donors = vector<contributor>();
+                    proposal.isDone = false;
                 });
 
+            }
+
+            void markDone(account_name account) {
+                getProposal(account).isDone = true;
             }
 
             //@abi action
@@ -217,6 +223,7 @@ namespace P2Pact {
     EOSIO_ABI_EX(Proposals,
     // Proposal core
     (add)
+    (markDone)
     (addcontrib)
     (addproofhash)
     (update)
