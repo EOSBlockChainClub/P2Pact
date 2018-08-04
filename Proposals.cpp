@@ -44,47 +44,10 @@ namespace P2Pact {
     *      addProofHash => Add a proof hash to the associated proposal
     */
 
-   class Contributors: public contract {
+   class Proposals: public contract{
         using contract::contract;
 
-        public:
-            //@abi action 
-            Contributors(account_name self):contract(self) {}
-
-            void update(account_name _user, uint64_t _deposit) {
-                require_auth(_user);
-
-                contributorTable obj(_self, _self);
-
-                //Create or add total deposit depending if contributor has already donated
-                if(isNewUser(_user)) {
-                    //Insert object
-                    obj.emplace(_self,[&](auto& address) {
-                        address.prim_key = obj.available_primary_key();
-                        address.user = _user;
-                        address.totalContribution = _deposit;
-                    });
-                } else {
-                    //Get object by secondary key
-                    auto contributions = obj.get_index<N(getbyuser)>();
-                    auto &contribution = contributions.get(_user);
-                    //update total contribution
-                    obj.modify(contribution, _self, [&](auto& address) {
-                        address.totalContribution += _deposit;
-                    });
-                }
-            }
-
-        private:
-            //Check if the contributor already exists, and if so return them
-            bool isNewUser(account_name user) {
-                contributorTable contributorObj(_self, _self);
-                // get contributors by secondary key
-                auto contributions = contributorObj.get_index<N(getbyuser)>();
-                auto contribution = contributions.find(user);
-
-                return contribution == contributions.end();
-            }
+         private:
 
             //@abi table
             struct contributor {
@@ -101,15 +64,6 @@ namespace P2Pact {
                 indexed_by< N(getbyuser), const_mem_fun<contributor, account_name, 
                 &contributor::get_by_user> >> contributorTable;
 
-
-   };
-
-
-   class Proposals: public contract{
-        using contract::contract;
-
-         private:
-
             //@abi table proposal i64
             struct proposal {
                 uint64_t account_name;
@@ -125,6 +79,15 @@ namespace P2Pact {
             };
 
             typedef multi_index<N(proposal), proposal> proposalIndex;
+
+            bool isNewContributor(account_name user) {
+                contributorTable contributorObj(_self, _self);
+                // get contributors by secondary key
+                auto contributions = contributorObj.get_index<N(getbyuser)>();
+                auto contribution = contributions.find(user);
+
+                return contribution == contributions.end();
+            }
 
         public:
             Proposals(account_name self):contract(self) {}
@@ -179,10 +142,36 @@ namespace P2Pact {
                 return currProp;
             }
 
+            //@abi action
             void addProofHash(checksum256 proofHash, string& proofName, account_name account) {
                 auto currProp = getProposal(account);
                 currProp.proofHashes.push_back(proofHash);
                 currProp.proofNames.push_back(proofName);
+            }
+
+            //@abi action
+            void update(account_name _user, uint64_t _deposit) {
+                require_auth(_user);
+
+                contributorTable obj(_self, _self);
+
+                //Create or add total deposit depending if contributor has already donated
+                if(isNewContributor(_user)) {
+                    //Insert object
+                    obj.emplace(_self,[&](auto& address) {
+                        address.prim_key = obj.available_primary_key();
+                        address.user = _user;
+                        address.totalContribution = _deposit;
+                    });
+                } else {
+                    //Get object by secondary key
+                    auto contributions = obj.get_index<N(getbyuser)>();
+                    auto &contribution = contributions.get(_user);
+                    //update total contribution
+                    obj.modify(contribution, _self, [&](auto& address) {
+                        address.totalContribution += _deposit;
+                    });
+                }
             }
 
        
