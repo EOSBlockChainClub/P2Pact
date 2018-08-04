@@ -125,7 +125,7 @@ namespace P2Pact {
             }
             //@abi action
             void markDone(account_name account) {
-                currProposal = getProposal(account);
+                proposal currProposal = getProposal(account);
                 currProposal.isDone = true;
                 currProposal.isVoteOpen = true;
             }
@@ -204,21 +204,21 @@ namespace P2Pact {
             }
        
             //@abi action
-            void vote(account_name proposal, account_name voter, &string choice) {
-                proposal currProposal = getProposal(proposal);
+            void vote(account_name account, account_name voter, string choice) {
+                proposal currProposal = getProposal(account);
                 if(currProposal.isVoteOpen) {
                     vector<contributor>::iterator it;
                     for(it = currProposal.donors.begin(); it != currProposal.donors.end(); it++) {
-                        if (it == voter) {
+                        if (it->user == voter) {
                             if (choice.compare("for") == 0) {
                                 currProposal.votesFor += 1;
-                                currProposal.hasVoted.push_back(voter);
+                                currProposal.haveVoted.push_back(voter);
                             } else {
                                 currProposal.votesAgainst += 1;
-                                currProposal.hasVoted.push_back(voter);
+                                currProposal.haveVoted.push_back(voter);
                             }
 
-                            if (currProposal.hasVoted.size() > (currProposal.size()/2)) {
+                            if (currProposal.haveVoted.size() > (currProposal.donors.size()/2)) {
                                 currProposal.isVoteOpen = false;
                             }
                         }
