@@ -258,7 +258,7 @@ namespace P2Pact {
     (addcontrib)
     (addproofhash)
     (update)
-
+    (vote)
     // tokens deposits
     (transfer)
     )
