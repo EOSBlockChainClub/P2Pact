@@ -71,12 +71,12 @@ namespace P2Pact {
                 string proposalDescription;
                 uint64_t threshold;
                 uint64_t totalPledged;
-                vector<checksum256> proofHashes;
-                vector<string> proofNames;
-                vector<contributor> donors;
+                //checksum256[] proofHashes;
+                //string[] proofNames;
+                //contributor donors;
                 uint64_t primary_key() const { return account_name; }
 
-                EOSLIB_SERIALIZE(proposal, (account_name)(proposalName)(proposalDescription)(threshold)(totalPledged)(proofHashes)(proofNames)(donors))
+                EOSLIB_SERIALIZE(proposal, (account_name)(proposalName)(proposalDescription)(threshold)(totalPledged))
             };
 
             typedef multi_index<N(proposal), proposal> proposalIndex;
@@ -107,9 +107,9 @@ namespace P2Pact {
                     proposal.proposalDescription = proposalDescription;
                     proposal.threshold = threshold;
                     proposal.totalPledged = 0;
-                    proposal.proofHashes = vector<checksum256>();
-                    proposal.proofNames = vector<string>();
-                    proposal.donors = vector<contributor>();
+                    //proposal.proofHashes = checksum256[10];
+                    //proposal.proofNames = checksum[10];
+
                 });
 
             }
@@ -140,13 +140,14 @@ namespace P2Pact {
                 return currProp;
             }
 
+            /*
             //@abi action
             void addproofhash(checksum256 proofHash, string& proofName, account_name account) {
                 auto currProp = getProposal(account);
                 currProp.proofHashes.push_back(proofHash);
                 currProp.proofNames.push_back(proofName);
             }
-
+            */
             //@abi action
             void update(account_name _user, uint64_t _deposit, proposal currProp) {
                 require_auth(_user);
@@ -163,9 +164,7 @@ namespace P2Pact {
                         address.totalContribution = _deposit;
                     });
 
-                    auto contributions = obj.get_index<N(getbyuser)>();
-                    auto &contribution = contributions.get(_user);
-                    currProp.donors.push_back(contribution);
+                    
 
                 } else {
                     //Get object by secondary key
@@ -218,7 +217,6 @@ namespace P2Pact {
     // Proposal core
     (add)
     (addcontrib)
-    (addproofhash)
     (update)
 
     // tokens deposits
