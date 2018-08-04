@@ -37,6 +37,27 @@ namespace P2Pact {
     *  Phase 2:
     */
 
+   class Proofs {
+        public:
+
+        Proofs(){
+            proofs.proofHashes = new vector<checksum256>();
+            proofs.proofNames = new vector<string>();
+        }
+
+        void addProof(checksum256 proofHash, string proofName, proofs proposalProofs ) {
+            proposalProofs.proofHashes.insert(proofHash);
+            prosposalProofs.proofNames.insert(proofName);
+        }
+
+        private:
+
+        struct proofs {
+            vector<checksum256> proofHashes;
+            vector<string> proofNames
+        }
+   };
+
    class Contributors {
         public:
             //@abi action 
@@ -161,6 +182,7 @@ namespace P2Pact {
                 uint64_t threshold;
                 uint64_t totalPledged;
                 Contributors contributors;
+                Proofs proofs;
                 uint64_t primary_key() const { return username; }
 
                 EOSLIB_SERIALIZE(proposal, (account_name)(proposalName)(proposalDescription)(threshold))
