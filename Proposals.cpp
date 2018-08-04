@@ -44,33 +44,14 @@ namespace P2Pact {
     *      addProofHash => Add a proof hash to the associated proposal
     */
 
-   class Proofs {
-        public:
+   class Contributors: public contract {
+        using contract::contract;
 
-        Proofs(){
-            proofs.proofHashes = new vector<checksum256>();
-            proofs.proofNames = new vector<string>();
-        }
-
-        void addProof(checksum256 proofHash, string proofName, proofs proposalProofs ) {
-            proposalProofs.proofHashes.insert(proofHash);
-            prosposalProofs.proofNames.insert(proofName);
-        }
-
-        private:
-
-        struct proofs {
-            vector<checksum256> proofHashes;
-            vector<string> proofNames
-        }
-   };
-
-   class Contributors {
         public:
             //@abi action 
-            Contributors(){}
+            Contributors(account_name self):contract(self) {}
 
-            void update(account_name _self, uint64_t _deposit) {
+            void update(account_name _user, uint64_t _deposit) {
                 require_auth(_user);
 
                 contributorTable obj(_self, _self);
@@ -79,7 +60,7 @@ namespace P2Pact {
                 if(isNewUser(_user)) {
                     //Insert object
                     obj.emplace(_self,[&](auto& address) {
-                        address.primary_key = obj.available_primary_key();
+                        address.prim_key = obj.available_primary_key();
                         address.user = _user;
                         address.totalContribution = _deposit;
                     });
@@ -100,18 +81,18 @@ namespace P2Pact {
                 contributorTable contributorObj(_self, _self);
                 // get contributors by secondary key
                 auto contributions = contributorObj.get_index<N(getbyuser)>();
-                auto contribution = contributors.find(user);
+                auto contribution = contributions.find(user);
 
-                return contributor == contributors.end();
+                return contribution == contributions.end();
             }
 
             //@abi table
             struct contributor {
-                uint64_t primary_key;
+                uint64_t prim_key;
                 account_name user;
                 uint64_t totalContribution;
                 //Create primary key
-                auto primary_key() const {return primary_key;}
+                auto primary_key() const {return prim_key;}
                 //Create secondary key on contributor
                 account_name get_by_user() const {return user;}
             };
@@ -126,6 +107,24 @@ namespace P2Pact {
 
    class Proposals: public contract{
         using contract::contract;
+
+         private:
+
+            //@abi table proposal i64
+            struct proposal {
+                uint64_t account_name;
+                string proposalName;
+                string proposalDescription;
+                uint64_t threshold;
+                uint64_t totalPledged;
+                vector<checksum256> proofHashes;
+                vector<string> proofNames;
+                uint64_t primary_key() const { return account_name; }
+
+                EOSLIB_SERIALIZE(proposal, (account_name)(proposalName)(proposalDescription)(threshold))
+            };
+
+            typedef multi_index<N(proposal), proposal> proposalIndex;
 
         public:
             Proposals(account_name self):contract(self) {}
@@ -144,8 +143,6 @@ namespace P2Pact {
                     proposal.proposalDescription = proposalDescription;
                     proposal.threshold = threshold;
                     proposal.totalPledged = 0;
-                    proposal.contributors = new Contributors();
-                    proposal.proofs = new
                 });
 
             }
@@ -161,21 +158,20 @@ namespace P2Pact {
             void addContributor(account_name account, account_name contributor, uint64_t amount) {
                 proposal currProp = getProposal(account);
                 if (checkThreshold(currProp, amount) == false) {
-                    currProp.contributors.update(contributor, amount);
                     currProp.totalPledged += amount;
                 }
             }
 
             //@abi action
-            bool checkThreshold(proposal currProp uint64_t amount) {
-                if(currProp.totalPledged += amount > threshold) {
+            bool checkThreshold(proposal &currProp, uint64_t amount) {
+                if(currProp.totalPledged += amount > currProp.threshold) {
                     return true;
                 } else return false;
 
             }
 
             //@abi action
-            proposal getProposal(account_name account) {
+             proposal getProposal(account_name account) {
                 proposalIndex proposals(_self, _self);
                 auto iterator = proposals.find(account);
                 eosio_assert(iterator != proposals.end(), "Address for account not found");
@@ -184,25 +180,13 @@ namespace P2Pact {
             }
 
             void addProofHash(checksum256 proofHash, string& proofName, account_name account) {
-                getProposal(account).proofs.add(proofHash, proofName);
+                auto currProp = getProposal(account);
+                currProp.proofHashes.push_back(proofHash);
+                currProp.proofNames.push_back(proofName);
             }
 
-        private:
-
-            //@abi table proposal i64
-            struct proposal {
-                uint64_t account_name;
-                string proposalName;
-                string proposalDescription;
-                uint64_t threshold;
-                uint64_t totalPledged;
-                Contributors contributors;
-                Proofs proofs;
-                uint64_t primary_key() const { return username; }
-
-                EOSLIB_SERIALIZE(proposal, (account_name)(proposalName)(proposalDescription)(threshold))
-            };
+       
         
             
-   }
+   };
 }
