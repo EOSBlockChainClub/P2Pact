@@ -15,6 +15,7 @@ namespace P2Pact {
     *      threshold(uint64): The amount to be raised
     *      contributors(struct contributor): The contributors to the proposal
     *      proofs(struct proof): Proofs for completion of proposal
+    * 
     *      
     * 
     * Contributor struct: Multi index table to store contributors
@@ -23,7 +24,6 @@ namespace P2Pact {
     *      contributionTotal(uint64): The total contribution of user
     * 
     * Proof struct: Multi index table to store proofs
-    *      prim_key(uint64): Primary key
     *      proofName(string): Name of proof
     *      proofHash(Checksum256): Hash of proof
     * 
@@ -35,6 +35,13 @@ namespace P2Pact {
     *      addContributor => Add contributor to proposal
     *          
     *  Phase 2:
+    *       checkVOtingOpen => Initiates voting phase for smart contract
+    *       checkVotingThreshold => Determines whether total votes cast is majority
+    *       vote => Check if contributor and if so allow a vote
+    *       distributeFunds => once vote is complete, distribute funds accordingly
+    * 
+    *  Phase 3:
+    *      addProofHash => Add a proof hash to the associated proposal
     */
 
    class Proofs {
@@ -128,6 +135,9 @@ namespace P2Pact {
                         uint64_t threshold) {                
                 require_auth(account); //Ensure only an owned account can submit a proposal
                 proposalIndex proposals(_self, _self); //Create table and pass scope
+                auto iterator = proposals.find(account);
+                eosio_assert(iterator == proposals.end(), "Proposer has already created a proposal");
+
                 proposals.emplace(account, [&](auto& proposal){
                     proposal.account_name = account;
                     proposal.proposalName = proposalName;
