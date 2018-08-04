@@ -37,6 +37,63 @@ namespace P2Pact {
     *  Phase 2:
     */
 
+   class Contributors {
+        public:
+            //@abi action 
+            void update(account_name _self, uint64_t _deposit) {
+                require_auth(_user);
+
+                contributorTable obj(_self, _self);
+
+                //Create or add total deposit depending if contributor has already donated
+                if(isNewUser(_user)) {
+                    //Insert object
+                    obj.emplace(_self,[&](auto& address) {
+                        address.primary_key = obj.available_primary_key();
+                        address.user = _user;
+                        address.totalContribution = _deposit;
+                    });
+                } else {
+                    //Get object by secondary key
+                    auto contributions = obj.get_index<N(getbyuser)>();
+                    auto &contribution = contributions.get(_user);
+                    //update total contribution
+                    obj.modify(contribution, _self, [&](auto& address) {
+                        address.totalContribution += _deposit;
+                    });
+                }
+            }
+
+        private:
+            //Check if the contributor already exists, and if so return them
+            bool isNewUser(account_name user) {
+                contributorTable contributorObj(_self, _self);
+                // get contributors by secondary key
+                auto contributors = contributorObj.get_index<N(getbyuser)>();
+                auto contributor = contributors.find(user);
+
+                return contributor == contributors.end();
+            }
+
+            //@abi table
+            struct contributor {
+                uint64_t primary_key;
+                account_name user;
+                uint64_t totalContribution;
+                //Create primary key
+                auto primary_key() const {return primary_key;}
+                //Create secondary key on contributor
+                account_name get_by_user() const {return user;}
+            };
+
+            typedef multi_index< N(contributor), contributor,
+                indexed_by< N(getbyuser), const_mem_fun<contributor, account_name, 
+                &contributor::get_by_user> >> contributorTable;
+
+
+   };
+
+
    class Proposals: public contract{
         using contract::contract;
 
