@@ -121,24 +121,24 @@ namespace P2Pact {
             //@abi action
             void deposit(uint64_t amount){
 
-
+                //TO DO With Token
 
             }
 
             //@abi action
             void addContributor(account_name account, account_name contributor, uint64_t amount) {
                 proposal currProp = getProposal(account);
-                if (checkThreshold == false) {
+                if (checkThreshold(currProp, amount) == false) {
                     currProp.contributors.update(contributor, amount);
                     currProp.totalPledged += amount;
                 }
-
-
-
             }
 
             //@abi action
-            bool checkThreshold(uint64_t deposit) {
+            bool checkThreshold(proposal currProp uint64_t amount) {
+                if(currProp.totalPledged += amount > threshold) {
+                    return true;
+                } else return false;
 
             }
 
