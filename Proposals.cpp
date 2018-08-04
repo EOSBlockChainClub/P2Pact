@@ -75,9 +75,13 @@ namespace P2Pact {
                 vector<string> proofNames;
                 vector<contributor> donors;
                 bool isDone;
+                bool isVoteOpen;
+                uint32_t votesFor;
+                uint32_t votesAgainst;
+                vector<uint64_t> haveVoted;
                 uint64_t primary_key() const { return account_name; }
 
-                EOSLIB_SERIALIZE(proposal, (account_name)(proposalName)(proposalDescription)(threshold)(totalPledged)(proofHashes)(proofNames)(donors)(isDone))
+                EOSLIB_SERIALIZE(proposal, (account_name)(proposalName)(proposalDescription)(threshold)(totalPledged)(proofHashes)(proofNames)(donors)(isDone)(isVoteOpen)(votesFor)(votesAgainst)(haveVoted))
             };
 
             typedef multi_index<N(proposal), proposal> proposalIndex;
@@ -112,12 +116,18 @@ namespace P2Pact {
                     proposal.proofNames = vector<string>();
                     proposal.donors = vector<contributor>();
                     proposal.isDone = false;
+                    proposal.isVoteOpen = false;
+                    proposal.votesFor = 0;
+                    proposal.votesAgainst = 0;
+                    proposal.haveVoted = vector<uint64_t>();
                 });
 
             }
-
+            //@abi action
             void markDone(account_name account) {
-                getProposal(account).isDone = true;
+                currProposal = getProposal(account);
+                currProposal.isDone = true;
+                currProposal.isVoteOpen = true;
             }
 
             //@abi action
@@ -193,7 +203,28 @@ namespace P2Pact {
                 update(from, quantity.amount, pledgedProposal);
             }
        
-       
+            //@abi action
+            void vote(account_name proposal, account_name voter, &string choice) {
+                proposal currProposal = getProposal(proposal);
+                if(currProposal.isVoteOpen) {
+                    vector<contributor>::iterator it;
+                    for(it = currProposal.donors.begin(); it != currProposal.donors.end(); it++) {
+                        if (it == voter) {
+                            if (choice.compare("for") == 0) {
+                                currProposal.votesFor += 1;
+                                currProposal.hasVoted.push_back(voter);
+                            } else {
+                                currProposal.votesAgainst += 1;
+                                currProposal.hasVoted.push_back(voter);
+                            }
+
+                            if (currProposal.hasVoted.size() > (currProposal.size()/2)) {
+                                currProposal.isVoteOpen = false;
+                            }
+                        }
+                    }
+                }
+            }
         
             
    };
