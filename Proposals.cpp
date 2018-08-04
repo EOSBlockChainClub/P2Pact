@@ -125,9 +125,15 @@ namespace P2Pact {
             }
             //@abi action
             void markdone(account_name account) {
-                proposal currProposal = getProposal(account);
-                currProposal.isDone = true;
-                currProposal.isVoteOpen = true;
+
+                proposalIndex proposals(_self, _self); //Create table and pass scope
+                auto iterator = proposals.find(account);
+
+                proposals.modify(iterator, _self, [&](auto& proposal) {
+                    proposal.isDone = true;
+                    proposal.isVoteOpen = true;
+                });
+
             }
 
             //@abi action
@@ -149,7 +155,6 @@ namespace P2Pact {
             void modify(account_name proposal_account, uint64_t amount) {
                 proposalIndex proposals(_self, _self); //Create table and pass scope
                 auto iterator = proposals.find(proposal_account);
-                eosio_assert(iterator == proposals.end(), "Proposer has already created a proposal");
 
                 proposals.modify(iterator, _self, [&](auto& proposal) {
                     proposal.totalPledged += amount;
@@ -179,9 +184,14 @@ namespace P2Pact {
 
             //@abi action
             void addproofhash(checksum256 proofHash, string& proofName, account_name account) {
-                auto currProp = getProposal(account);
-                currProp.proofHashes.push_back(proofHash);
-                currProp.proofNames.push_back(proofName);
+
+                proposalIndex proposals(_self, _self); //Create table and pass scope
+                auto iterator = proposals.find(account);
+
+                proposals.modify(iterator, _self, [&](auto& proposal) {
+                    proposal.proofHashes.push_back(proofHash);
+                    proposal.proofNames.push_back(proofName);
+                });
             }
 
             //@abi action
@@ -229,16 +239,26 @@ namespace P2Pact {
                     vector<contributor>::iterator it;
                     for(it = currProposal.donors.begin(); it != currProposal.donors.end(); it++) {
                         if (it->user == voter) {
+                            proposalIndex proposals(_self, _self); //Create table and pass scope
+                            auto iterator = proposals.find(account);
+
                             if (choice.compare("for") == 0) {
-                                currProposal.votesFor += 1;
-                                currProposal.haveVoted.push_back(voter);
+
+                                proposals.modify(iterator, _self, [&](auto& proposal) {
+                                    proposal.votesFor += 1;
+                                    proposal.haveVoted.push_back(voter);
+                                });
                             } else {
-                                currProposal.votesAgainst += 1;
-                                currProposal.haveVoted.push_back(voter);
+                                proposals.modify(iterator, _self, [&](auto& proposal) {
+                                    proposal.votesAgainst += 1;
+                                    proposal.haveVoted.push_back(voter);
+                                });
                             }
 
                             if (currProposal.haveVoted.size() > (currProposal.donors.size()/2)) {
-                                currProposal.isVoteOpen = false;
+                                proposals.modify(iterator, _self, [&](auto& proposal) {
+                                    proposal.isVoteOpen = false;
+                                });
                             }
                         }
                     }
