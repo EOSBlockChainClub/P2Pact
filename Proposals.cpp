@@ -111,13 +111,6 @@ namespace P2Pact {
             }
 
             //@abi action
-            void deposit(uint64_t amount){
-
-                //TO DO With Token
-
-            }
-
-            //@abi action
             void addContributor(account_name account, account_name contributor, uint64_t amount) {
                 proposal currProp = getProposal(account);
                 if (checkThreshold(currProp, amount) == false) {
@@ -125,7 +118,7 @@ namespace P2Pact {
                 }
             }
 
-            //@abi action
+
             bool checkThreshold(proposal &currProp, uint64_t amount) {
                 if(currProp.totalPledged += amount > currProp.threshold) {
                     return true;
@@ -133,8 +126,8 @@ namespace P2Pact {
 
             }
 
-            //@abi action
-             proposal getProposal(account_name account) {
+
+            proposal getProposal(account_name account) {
                 proposalIndex proposals(_self, _self);
                 auto iterator = proposals.find(account);
                 eosio_assert(iterator != proposals.end(), "Address for account not found");
@@ -178,4 +171,7 @@ namespace P2Pact {
         
             
    };
+
+    EOSIO_ABI(Proposals, (add)(addContributor)(addProofHash)(update))
+
 }
