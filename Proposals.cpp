@@ -212,7 +212,13 @@ namespace P2Pact {
 
                     auto contributions = obj.get_index<N(getbyuser)>();
                     auto &contribution = contributions.get(_user);
-                    currProp.donors.push_back(contribution);
+                    
+                    proposalIndex proposals(_self, _self); //Create table and pass scope
+                    auto iterator = proposals.find(currProp.account_name);
+
+                    proposals.modify(iterator, _self, [&](auto& proposal) {
+                        proposal.donors.push_back(contribution);
+                    });
 
                 } else {
                     //Get object by secondary key
