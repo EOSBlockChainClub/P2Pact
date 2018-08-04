@@ -124,7 +124,7 @@ namespace P2Pact {
 
             }
             //@abi action
-            void markDone(account_name account) {
+            void markdone(account_name account) {
                 proposal currProposal = getProposal(account);
                 currProposal.isDone = true;
                 currProposal.isVoteOpen = true;
@@ -133,15 +133,36 @@ namespace P2Pact {
             //@abi action
             void addcontrib(account_name account, account_name contributor, uint64_t amount) {
                 proposal currProp = getProposal(account);
+                print("Account name will follow");
+                print(account);
+                print("Contributor will follow");
+                print(contributor);
+                print("Amount will follow");
+                print(amount);
                 if (checkThreshold(currProp, amount) == false) {
-                    currProp.totalPledged += amount;
+                    print("Inside update totalPledged");
+                    modify(account, amount);
                     update(contributor, amount, currProp);
                 }
             }
 
+            void modify(account_name proposal_account, uint64_t amount) {
+                proposalIndex proposals(_self, _self); //Create table and pass scope
+                auto iterator = proposals.find(proposal_account);
+                eosio_assert(iterator == proposals.end(), "Proposer has already created a proposal");
 
-            bool checkThreshold(proposal &currProp, uint64_t amount) {
-                if(currProp.totalPledged += amount > currProp.threshold) {
+                proposals.modify(iterator, _self, [&](auto& proposal) {
+                    proposal.totalPledged += amount;
+                });
+
+            }
+
+            bool checkThreshold(proposal currProp, uint64_t amount) {
+                print("Total pledged will follow");
+                print(currProp.totalPledged);
+                print("Amount will follow");
+                print(amount);
+                if((currProp.totalPledged) > currProp.threshold) {
                     return true;
                 } else return false;
 
@@ -196,11 +217,9 @@ namespace P2Pact {
 
             void transfer(account_name from, account_name to, asset quantity, string memo) {
                 // need to get the proposal
-                uint64_t accountName;
-                std::istringstream iss(memo);
-                iss >> accountName;
-                proposal pledgedProposal = getProposal(accountName);
-                update(from, quantity.amount, pledgedProposal);
+                account_name accountName;
+                accountName = string_to_name(memo.c_str());
+                addcontrib(accountName, from, quantity.amount/10000); // for some reason amount likes to be weird
             }
        
             //@abi action
@@ -254,7 +273,7 @@ namespace P2Pact {
     EOSIO_ABI_EX(Proposals,
     // Proposal core
     (add)
-    (markDone)
+    (markdone)
     (addcontrib)
     (addproofhash)
     (update)
