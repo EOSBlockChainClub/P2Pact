@@ -76,7 +76,7 @@ namespace P2Pact {
                 vector<contributor> donors;
                 uint64_t primary_key() const { return account_name; }
 
-                EOSLIB_SERIALIZE(proposal, (account_name)(proposalName)(proposalDescription)(threshold))
+                EOSLIB_SERIALIZE(proposal, (account_name)(proposalName)(proposalDescription)(threshold)(totalPledged)(proofHashes)(proofNames)(donors))
             };
 
             typedef multi_index<N(proposal), proposal> proposalIndex;
@@ -107,12 +107,15 @@ namespace P2Pact {
                     proposal.proposalDescription = proposalDescription;
                     proposal.threshold = threshold;
                     proposal.totalPledged = 0;
+                    proposal.proofHashes = vector<checksum256>();
+                    proposal.proofNames = vector<string>();
+                    proposal.donors = vector<contributor>();
                 });
 
             }
 
             //@abi action
-            void addContributor(account_name account, account_name contributor, uint64_t amount) {
+            void addcontrib(account_name account, account_name contributor, uint64_t amount) {
                 proposal currProp = getProposal(account);
                 if (checkThreshold(currProp, amount) == false) {
                     currProp.totalPledged += amount;
@@ -138,7 +141,7 @@ namespace P2Pact {
             }
 
             //@abi action
-            void addProofHash(checksum256 proofHash, string& proofName, account_name account) {
+            void addproofhash(checksum256 proofHash, string& proofName, account_name account) {
                 auto currProp = getProposal(account);
                 currProp.proofHashes.push_back(proofHash);
                 currProp.proofNames.push_back(proofName);
@@ -175,11 +178,52 @@ namespace P2Pact {
                 }
             }
 
+            void transfer(account_name from, account_name to, asset quantity, string memo) {
+                // need to get the proposal
+                uint64_t accountName;
+                std::istringstream iss(memo);
+                iss >> accountName;
+                proposal pledgedProposal = getProposal(accountName);
+                update(from, quantity.amount, pledgedProposal);
+            }
+       
        
         
             
    };
 
-    EOSIO_ABI(Proposals, (add)(addContributor)(addProofHash)(update))
+    //EOSIO_ABI(Proposals, (add)(addcontrib)(addproofhash)(update))
+
+
+
+   #define EOSIO_ABI_EX( TYPE, MEMBERS ) \
+    extern "C" { \
+        void apply( uint64_t receiver, uint64_t code, uint64_t action ) { \
+            if( action == N(onerror)) { \
+                /* onerror is only valid if it is for the "eosio" code account and authorized by "eosio"'s "active permission */ \
+                eosio_assert(code == N(eosio), "onerror action's are only valid from the \"eosio\" system account"); \
+            } \
+            auto self = receiver; \
+            if( code == self || code == N(eosio.token) || action == N(onerror) ) { \
+                TYPE thiscontract( self ); \
+                switch( action ) { \
+                    EOSIO_API( TYPE, MEMBERS ) \
+                } \
+                /* does not allow destructor of thiscontract to run: eosio_exit(0); */ \
+            } \
+        } \
+    }
+
+    EOSIO_ABI_EX(Proposals,
+    // Proposal core
+    (add)
+    (addcontrib)
+    (addproofhash)
+    (update)
+
+    // tokens deposits
+    (transfer)
+    )
+
 
 }
