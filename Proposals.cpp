@@ -69,8 +69,8 @@ namespace P2Pact {
             bool isNewUser(account_name user) {
                 contributorTable contributorObj(_self, _self);
                 // get contributors by secondary key
-                auto contributors = contributorObj.get_index<N(getbyuser)>();
-                auto contributor = contributors.find(user);
+                auto contributions = contributorObj.get_index<N(getbyuser)>();
+                auto contribution = contributors.find(user);
 
                 return contributor == contributors.end();
             }
@@ -114,6 +114,8 @@ namespace P2Pact {
             //@abi action
             void addContributor(const account_name account) {
 
+                
+
             }
 
             //@abi action
@@ -134,7 +136,8 @@ namespace P2Pact {
                 string proposalName;
                 string proposalDescription;
                 uint64_t threshold;
-
+                uint64_t totalPledged;
+                Contributors contributors;
                 uint64_t primary_key() const { return username; }
 
                 EOSLIB_SERIALIZE(proposal, (account_name)(proposalName)(proposalDescription)(threshold))
