@@ -346,27 +346,6 @@ class Index extends Component {
       </Card>
     );
 
-    const generateProposals = () => {
-      return(
-      <FormControl className={classes.formControl} margin="normal">
-        <InputLabel htmlFor="proposals">Proposals</InputLabel>
-        <Select
-          value={this.state.accountName}
-          onChange={this.handleChange}
-          name="proposals"
-          fullWidth
-        >
-          <MenuItem value="">
-            <em>None</em>
-          </MenuItem>
-          {proposalTable.map((row) => {
-            <MenuItem value={row.account_name}>{console.log(row.proposalName)}{row.proposalName}</MenuItem>
-          })}
-        </Select>
-      </FormControl>
-      );
-    }
-
     let noteCards = proposalTable.map((row, i) =>
       generateCard(i, row.account_name, row.proposalName, row.proposalDescription, row.threshold, row.totalPledged,
       row.proofHashes, row.proofNames, row.donors, row.isDone, row.isVoteOpen, row.votesFor, row.votesAgainst, row.haveVoted));
@@ -376,7 +355,7 @@ class Index extends Component {
         <AppBar position="static" color="default">
           <Toolbar>
             <Typography variant="title" color="inherit">
-              P2Pact
+              P2Pact - A peer-to-peer impact oriented funding platform
             </Typography>
           </Toolbar>
         </AppBar>
