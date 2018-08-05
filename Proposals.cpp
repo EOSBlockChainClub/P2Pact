@@ -11,11 +11,16 @@ namespace P2Pact {
     *      prim_key(uint64): Primary key
     *      proposer(proposer/uint64): Account name and address of proposer
     *      proposal(string): The proposal
-    *      timestamp(uint64): The time proposal was uploaded
     *      threshold(uint64): The amount to be raised
-    *      contributors(struct contributor): The contributors to the proposal
-    *      proofs(struct proof): Proofs for completion of proposal
-    * 
+    *      totalPledged(uint64): The amount pledged by others
+    *      proofHashes(checksum256): Hashed proof used for validation
+    *      proofNames(string): Human readable names for each hash
+    *      donors(contributor): The contributors who have donated to this proposal
+    *      isDone(boolean): Where the proposer indicates they have completed the task
+    *      isVoteOpen(boolean): Check to see if voting phase has begun
+    *      votesFor(uint32_t): Number of votes in favour of tasks being completed
+    *      votesAgainst(uint): Number of votes against the tasks being complete
+    *      haveVoted: Number of votes submitted in total
     *      
     * 
     * Contributor struct: Multi index table to store contributors
@@ -23,25 +28,25 @@ namespace P2Pact {
     *      contributor(contributor/uint64): Account name and address of contributor
     *      contributionTotal(uint64): The total contribution of user
     * 
-    * Proof struct: Multi index table to store proofs
-    *      proofName(string): Name of proof
-    *      proofHash(Checksum256): Hash of proof
-    * 
     * Public methods:
     *  Phase 1:      
+    *      add => Create a new proposal
     *      isnewuser => Check if the given account name has already contributed
     *      checkThreshold => Check if the threshold has been reached
     *      deposit => Record the deposit of tokens against the threshold
     *      addContributor => Add contributor to proposal
+    *      markDone => Indicate that this is done
+    *      modify => stateful modification of proposal state
+    *      getProposal => get Proposal from address
     *          
     *  Phase 2:
     *       checkVOtingOpen => Initiates voting phase for smart contract
     *       checkVotingThreshold => Determines whether total votes cast is majority
     *       vote => Check if contributor and if so allow a vote
-    *       distributeFunds => once vote is complete, distribute funds accordingly
     * 
     *  Phase 3:
     *      addProofHash => Add a proof hash to the associated proposal
+    *      addProofName => Name the hash associated
     */
 
    class Proposals: public contract{
@@ -50,7 +55,7 @@ namespace P2Pact {
          private:
 
             //@abi table
-            struct contributor {
+            struct contributor { // Struct for the contributor
                 uint64_t prim_key;
                 account_name user;
                 uint64_t totalContribution;
@@ -59,13 +64,13 @@ namespace P2Pact {
                 //Create secondary key on contributor
                 account_name get_by_user() const {return user;}
             };
-
+            //Set up a multi-index to search for contributors by primary key or account
             typedef multi_index< N(contributor), contributor,
                 indexed_by< N(getbyuser), const_mem_fun<contributor, account_name, 
                 &contributor::get_by_user> >> contributorTable;
 
             //@abi table proposal i64
-            struct proposal {
+            struct proposal { //Struct for the proposal
                 uint64_t account_name;
                 string proposalName;
                 string proposalDescription;
@@ -85,7 +90,7 @@ namespace P2Pact {
             };
 
             typedef multi_index<N(proposal), proposal> proposalIndex;
-
+            //Check to see if the contributor already exists - eliminates duplicates
             bool isNewContributor(account_name user) {
                 contributorTable contributorObj(_self, _self);
                 // get contributors by secondary key
@@ -97,7 +102,7 @@ namespace P2Pact {
 
         public:
             Proposals(account_name self):contract(self) {}
-
+            //Create a new proposal
             //@abi action
             void add(const account_name account, string& proposalName, string& proposalDescription,
                         uint64_t threshold) {                
@@ -124,7 +129,7 @@ namespace P2Pact {
 
             }
             //@abi action
-            void markdone(account_name account) {
+            void markdone(account_name account) { //Mark proposal as having been completed
 
                 proposalIndex proposals(_self, _self); //Create table and pass scope
                 auto iterator = proposals.find(account);
@@ -135,7 +140,7 @@ namespace P2Pact {
                 });
 
             }
-
+            //Add a contributor
             //@abi action
             void addcontrib(account_name account, account_name contributor, uint64_t amount) {
                 proposal currProp = getProposal(account);
@@ -151,7 +156,7 @@ namespace P2Pact {
                     update(contributor, amount, currProp);
                 }
             }
-
+            //Modify state of the Proposal
             void modify(account_name proposal_account, uint64_t amount) {
                 proposalIndex proposals(_self, _self); //Create table and pass scope
                 auto iterator = proposals.find(proposal_account);
@@ -161,7 +166,7 @@ namespace P2Pact {
                 });
 
             }
-
+            //Check if the total pledges have met threshold
             bool checkThreshold(proposal currProp, uint64_t amount) {
                 print("Total pledged will follow");
                 print(currProp.totalPledged);
@@ -173,7 +178,7 @@ namespace P2Pact {
 
             }
 
-
+            //Get proposal by account
             proposal getProposal(account_name account) {
                 proposalIndex proposals(_self, _self);
                 auto iterator = proposals.find(account);
@@ -181,7 +186,7 @@ namespace P2Pact {
                 auto currProp = proposals.get(account);
                 return currProp;
             }
-
+            //Upload a proof hash
             //@abi action
             void addproofhash(checksum256 proofHash, string& proofName, account_name account) {
 
@@ -193,7 +198,7 @@ namespace P2Pact {
                     proposal.proofNames.push_back(proofName);
                 });
             }
-
+            //Update list of contributors and their state
             //@abi action
             void update(account_name _user, uint64_t _deposit, proposal currProp) {
                 require_auth(_user);
@@ -230,14 +235,14 @@ namespace P2Pact {
                     });
                 }
             }
-
+            //Transfer tokens to contract for pledge
             void transfer(account_name from, account_name to, asset quantity, string memo) {
                 // need to get the proposal
                 account_name accountName;
                 accountName = string_to_name(memo.c_str());
                 addcontrib(accountName, from, quantity.amount/10000); // for some reason amount likes to be weird
             }
-       
+            //Vote for the outcome of project
             //@abi action
             void vote(account_name account, account_name voter, string choice) {
                 proposal currProposal = getProposal(account);
@@ -277,7 +282,7 @@ namespace P2Pact {
     //EOSIO_ABI(Proposals, (add)(addcontrib)(addproofhash)(update))
 
 
-
+    //External modifier to transform the token asset into an internal contract balance
    #define EOSIO_ABI_EX( TYPE, MEMBERS ) \
     extern "C" { \
         void apply( uint64_t receiver, uint64_t code, uint64_t action ) { \
@@ -295,7 +300,7 @@ namespace P2Pact {
             } \
         } \
     }
-
+    //ABI external 
     EOSIO_ABI_EX(Proposals,
     // Proposal core
     (add)
