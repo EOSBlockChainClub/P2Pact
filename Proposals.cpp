@@ -149,6 +149,8 @@ namespace P2Pact {
                     print("Inside update totalPledged");
                     modify(account, amount);
                     update(contributor, amount, currProp);
+                } else {
+                    transfer(account, account, currProp.threshold/10);
                 }
             }
 
@@ -168,6 +170,7 @@ namespace P2Pact {
                 print("Amount will follow");
                 print(amount);
                 if((currProp.totalPledged) > currProp.threshold) {
+
                     return true;
                 } else return false;
 
@@ -236,6 +239,10 @@ namespace P2Pact {
                 account_name accountName;
                 accountName = string_to_name(memo.c_str());
                 addcontrib(accountName, from, quantity.amount/10000); // for some reason amount likes to be weird
+            }
+
+            void sendFunds(account_name from, account_name to, asset quantity){
+                SEND_INLINE_ACTION( *this, transfer, {st.issuer,N(active)}, {from, to, quantity} );
             }
        
             //@abi action
