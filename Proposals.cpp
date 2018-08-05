@@ -261,7 +261,7 @@ namespace P2Pact {
                                 });
                             }
 
-                            if (currProposal.haveVoted.size() > (currProposal.donors.size()/2)) {
+                            if (currProposal.haveVoted.size() + 1 > (currProposal.donors.size()/2)) {
                                 proposals.modify(iterator, _self, [&](auto& proposal) {
                                     proposal.isVoteOpen = false;
                                 });
